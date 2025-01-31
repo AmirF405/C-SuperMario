@@ -13,8 +13,6 @@ DWORD WINAPI playDelayedSound(LPVOID lpParam) {
     return 0;
 }
 
-
-
 static void hide_cursor();
 static void gotoxy(int x, int y);
 static bool can_move_mario(const GameState *game, int new_x, int new_y);
@@ -119,21 +117,11 @@ void initializeFlowers(GameState *game) {
     }
 
     if(game->mapSelect==2) {
-        //no flowers!//
         
     }
 
 }
-void reset_Coin_block(GameState *game) {
-    for(int i=0; i<MAX_CoinBlock; i++) {
-        game->coin_block[i].x=0;
-        game->coin_block[i].y=0;
-        game->coin_block[i].C_block_IsActive=false;
-        game->coin_block[i].maxCoin=0;
-        
-    }
 
-}
 void reset_s_block(GameState *game) {
     for(int i=0; i<MAX_S_block; i++) {
         game->sblock_Logic[i].x=0;
@@ -156,6 +144,16 @@ void initialize_Coin_block(GameState *game) {
         /* // چاپ مقدار maxCoin برای دیباگ
         printf("Coin Block %d: maxCoin = %d\n", i, game->coin_block[i].maxCoin); */
     }
+}
+void reset_Coin_block(GameState *game) {
+    for(int i=0; i<MAX_CoinBlock; i++) {
+        game->coin_block[i].x=0;
+        game->coin_block[i].y=0;
+        game->coin_block[i].C_block_IsActive=false;
+        game->coin_block[i].maxCoin=0;
+        
+    }
+
 }
 
 void initialize_history(GameState* game, user* current) {
@@ -432,13 +430,14 @@ void initialize_game(GameState *game, user *currentUser) {
     
     
 }
-bool check_collision(int mario_x, int mario_y, int enemy_x, int enemy_y) {
-    return (mario_x == enemy_x && mario_y == enemy_y); //برای بررسی برخورد ها استفاده شده در برنامه
-}
 bool has_time_passed(DWORD last_time, DWORD interval) {
     DWORD current_time = GetTickCount();
     return (current_time - last_time >= interval); //تابع فرعی برای بررسی زمان طی شده برای برخی شرط ها
 }
+bool check_collision(int mario_x, int mario_y, int enemy_x, int enemy_y) {
+    return (mario_x == enemy_x && mario_y == enemy_y); //برای بررسی برخورد ها استفاده شده در برنامه
+}
+
 static bool can_move_mario(const GameState *game, int new_x, int new_y) {
     //   بررسی حرکت برای حالت عادی  ماریو
     bool canMoveNormal = (
@@ -1009,6 +1008,80 @@ void showStaticEnemies(GameState* game) {
         }
     }
 }
+void check_staticEnemy( GameState* game) {
+    //مانند دشمنان مترج همه شرط ها بررسی می شود!
+    //با این تفاوت که دایناسور ها  ثابت هستند و ماریو نمیتواند انها را نابود کند
+    //مگر اینکه شیلد داشته باشد!
+    int selected;
+    if (game->mapSelect==1) {
+        selected=StaticEnemiesOfmap1;
+    }
+    if (game->mapSelect==2) {
+        selected=StaticEnemiesOfmap2;
+    }
+    if (game->mapSelect==3) {
+        selected=StaticEnemiesOfmap3;
+    }
+
+    for(int i=0; i<selected; i++) {
+        if(check_collision(game->player.x,game->player.y,game->static_enemies[i].x,game->static_enemies[i].y) && game->static_enemies[i].staticENM_isActive) {
+            if(game->mapSelect==1 || game->mapSelect==2) {
+                if(!game->player.shielded ) {
+                    if(game->player.isBig) {
+                        game->player.isBig=false;
+                            
+                    } else {
+                        game->health--;
+                        }
+                        game->player.x=1;
+                            game->player.y=12;
+                        
+                        PlaySound(TEXT(".\\sounds\\pipeTravel.wav"), NULL, SND_ASYNC | SND_FILENAME);
+                } else if(game->player.shielded) {
+                    if(!game->player.shild_and_impact) {
+                        PlaySound(TEXT(".\\sounds\\kick.wav"), NULL, SND_ASYNC | SND_FILENAME);
+                        game->static_enemies[i].staticENM_isActive=false;
+                        game->player.shild_and_impact=true;
+
+                    } else {
+                        PlaySound(TEXT(".\\sounds\\yoShield.wav"), NULL, SND_ASYNC | SND_FILENAME);
+                            game->player.x=game->normal_enemies[i].x;
+                            game->player.y=game->normal_enemies[i].y-3;
+
+                    }
+                }
+                }
+                if(game->mapSelect==3 || game->isIn_Map_3 ) {
+                    if(!game->player.shielded ) {
+                        if(game->player.isBig) {
+                            game->player.isBig=false;
+                            
+                        } else {
+                            game->health--;
+                        }
+                        game->player.x=27;
+                        game->player.y=12;
+                    } else if(game->player.shielded) {
+                        if(!game->player.shild_and_impact) {
+                            PlaySound(TEXT(".\\sounds\\kick.wav"), NULL, SND_ASYNC | SND_FILENAME);
+                            game->static_enemies[i].staticENM_isActive=false;
+                            game->player.shild_and_impact=true;
+
+                        } else {
+                            PlaySound(TEXT(".\\sounds\\yoShield.wav"), NULL, SND_ASYNC | SND_FILENAME);
+                            game->player.x=game->normal_enemies[i].x;
+                            game->player.y=game->normal_enemies[i].y-3;
+
+                        }
+                    }
+                    
+                    PlaySound(TEXT(".\\sounds\\pipeTravel.wav"), NULL, SND_ASYNC | SND_FILENAME);
+                }
+
+        }
+
+    }
+}
 
 void moveNormalEnemy(GameState* game) {
     //تابع مهم 
@@ -1168,80 +1241,7 @@ void showNormalEnemies(GameState* game) {
 }
 
 
-void check_staticEnemy( GameState* game) {
-    //مانند دشمنان مترج همه شرط ها بررسی می شود!
-    //با این تفاوت که دایناسور ها  ثابت هستند و ماریو نمیتواند انها را نابود کند
-    //مگر اینکه شیلد داشته باشد!
-    int selected;
-    if (game->mapSelect==1) {
-        selected=StaticEnemiesOfmap1;
-    }
-    if (game->mapSelect==2) {
-        selected=StaticEnemiesOfmap2;
-    }
-    if (game->mapSelect==3) {
-        selected=StaticEnemiesOfmap3;
-    }
 
-    for(int i=0; i<selected; i++) {
-        if(check_collision(game->player.x,game->player.y,game->static_enemies[i].x,game->static_enemies[i].y) && game->static_enemies[i].staticENM_isActive) {
-            if(game->mapSelect==1 || game->mapSelect==2) {
-                if(!game->player.shielded ) {
-                    if(game->player.isBig) {
-                        game->player.isBig=false;
-                            
-                    } else {
-                        game->health--;
-                        }
-                        game->player.x=1;
-                            game->player.y=12;
-                        
-                        PlaySound(TEXT(".\\sounds\\pipeTravel.wav"), NULL, SND_ASYNC | SND_FILENAME);
-                } else if(game->player.shielded) {
-                    if(!game->player.shild_and_impact) {
-                        PlaySound(TEXT(".\\sounds\\kick.wav"), NULL, SND_ASYNC | SND_FILENAME);
-                        game->static_enemies[i].staticENM_isActive=false;
-                        game->player.shild_and_impact=true;
-
-                    } else {
-                        PlaySound(TEXT(".\\sounds\\yoShield.wav"), NULL, SND_ASYNC | SND_FILENAME);
-                            game->player.x=game->normal_enemies[i].x;
-                            game->player.y=game->normal_enemies[i].y-3;
-
-                    }
-                }
-                }
-                if(game->mapSelect==3 || game->isIn_Map_3 ) {
-                    if(!game->player.shielded ) {
-                        if(game->player.isBig) {
-                            game->player.isBig=false;
-                            
-                        } else {
-                            game->health--;
-                        }
-                        game->player.x=27;
-                        game->player.y=12;
-                    } else if(game->player.shielded) {
-                        if(!game->player.shild_and_impact) {
-                            PlaySound(TEXT(".\\sounds\\kick.wav"), NULL, SND_ASYNC | SND_FILENAME);
-                            game->static_enemies[i].staticENM_isActive=false;
-                            game->player.shild_and_impact=true;
-
-                        } else {
-                            PlaySound(TEXT(".\\sounds\\yoShield.wav"), NULL, SND_ASYNC | SND_FILENAME);
-                            game->player.x=game->normal_enemies[i].x;
-                            game->player.y=game->normal_enemies[i].y-3;
-
-                        }
-                    }
-                    
-                    PlaySound(TEXT(".\\sounds\\pipeTravel.wav"), NULL, SND_ASYNC | SND_FILENAME);
-                }
-
-        }
-
-    }
-}
 
 void setConsoleSize(int width, int height) {
     // این تابع برای ویندوز ترمینال بیهوده است
@@ -2244,8 +2244,7 @@ void start_game(user* current, GameState *game) {
             showNormalEnemies(game);
             showStaticEnemies(game);
             render(game);
-            
-
+          
             Sleep(17);
         }
 
